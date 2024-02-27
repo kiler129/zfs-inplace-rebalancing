@@ -64,7 +64,7 @@ function init_database () {
 # Output: a non-negative integer
 function get_rebalance_count () {
     local count
-    count=$(sqlite3 "${rebalance_db_file_name}" "SELECT passes FROM balancing WHERE file = '${1//'/\'}'")
+    count=$(sqlite3 "${rebalance_db_file_name}" "SELECT passes FROM balancing WHERE file = '${1//\'/\'\'}'")
     echo "${count:-0}"
 }
 
@@ -78,7 +78,7 @@ function persist_database () {
 # Sets number of completed balancing passes for a given file
 # Use: set_rebalance_count "/path/to/file" 123
 function set_rebalance_count () {
-    rebalance_db_cache="${rebalance_db_cache};INSERT OR REPLACE INTO balancing VALUES('${1//'/\'}', $2);"
+    rebalance_db_cache="${rebalance_db_cache};INSERT OR REPLACE INTO balancing VALUES('${1//\'/\'\'}, $2);"
     color_echo "${Green}" "File $1 completed $2 rebalance cycles"
 
     # this is slightly "clever", as there's no way to access monotonic time in shell.
@@ -282,9 +282,17 @@ color_echo "$Cyan" "  Skip Hardlinks: ${skip_hardlinks_flag}"
 
 # count files
 if [[ "${skip_hardlinks_flag,,}" == "true"* ]]; then
-    file_count=$(find "${root_path}" -type f -links 1 | wc -l)
+    if [ -x "$(command -v locar)" ]; then
+        file_count=$(locar "${root_path}" --type file -links 1 | wc -l)
+    else
+        file_count=$(find "${root_path}" -type f -links 1 | wc -l)
+    fi
 else
-    file_count=$(find "${root_path}" -type f | wc -l)
+    if [ -x "$(command -v locar)" ]; then
+        file_count=$(locar "${root_path}" --type file | wc -l)
+    else
+        file_count=$(find "${root_path}" -type f | wc -l)
+    fi
 fi
 
 color_echo "$Cyan" "  File count: ${file_count}"
