@@ -292,6 +292,7 @@ else
         file_count=$(locar "${root_path}" --type file | wc -l)
     else
         file_count=$(find "${root_path}" -type f | wc -l)
+    fi
 fi
 
 color_echo "$Cyan" "  File count: ${file_count}"
